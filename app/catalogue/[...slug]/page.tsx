@@ -2,21 +2,23 @@ import { mockProducts } from "@/mock/products";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
-// Obligatoire pour SSG dans Next.js 15
+// ✅ Génère les pages statiques avec catch-all slug
 export async function generateStaticParams() {
     return mockProducts.map((product) => ({
-        slug: product.slug,
+        slug: ["categorie", product.slug], // Exemple : /catalogue/categorie/tshirt-modele-1
     }));
 }
 
-// Props avec paramètres dynamiques
-interface Props {
-    params: { slug: string };
-}
+// ✅ Utilise Promise + await sur params comme contournement a changer plus tard
+export default async function ProductDetailPage({
+    params,
+}: {
+    params: Promise<{ slug: string[] }>;
+}) {
+    const { slug } = await params; // 👈 forcé ici
+    const productID = slug[1]; // on récupère "tshirt-modele-1"
 
-export default async function ProductDetailPage({ params }: Props) {
-    const { slug } = await params; // 👈 Obligatoire avec Next.js 15
-    const product = mockProducts.find((p) => p.slug === slug);
+    const product = mockProducts.find((p) => p.slug === productID);
 
     if (!product) return notFound();
 
@@ -39,7 +41,9 @@ export default async function ProductDetailPage({ params }: Props) {
                         {product.price.toFixed(2)} €
                     </p>
                     <div className="flex items-center gap-4 mb-6">
-                        <label htmlFor="qty" className="text-sm font-medium">Quantité :</label>
+                        <label htmlFor="qty" className="text-sm font-medium">
+                            Quantité :
+                        </label>
                         <input
                             id="qty"
                             type="number"
