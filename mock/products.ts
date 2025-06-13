@@ -1,0 +1,34 @@
+import { Product } from "@/types/product";
+
+export const mockProducts: Product[] = [
+    {
+        id: "1",
+        slug: "tshirt-modele-1",
+        title: "T-shirt modèle 1",
+        description: "T-shirt en coton bio, coupe moderne.",
+        price: 29.9,
+        image: "/images/product/product-1.jpg",
+        cotonBio: true,
+        editionLimitee: false,
+    },
+    {
+        id: "2",
+        slug: "tshirt-modele-2",
+        title: "T-shirt modèle 2",
+        description: "T-shirt coupe droite, imprimé original.",
+        price: 34.9,
+        image: "/images/product/product-2.jpg",
+        cotonBio: false,
+        editionLimitee: false,
+    },
+    {
+        id: "3",
+        slug: "tshirt-modele-3",
+        title: "T-shirt modèle 3",
+        description: "Modèle premium édition limitée.",
+        price: 44.9,
+        image: "/images/product/product-3.jpg",
+        cotonBio: true,
+        editionLimitee: true,
+    }
+];
