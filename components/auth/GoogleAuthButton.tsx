@@ -6,6 +6,8 @@ import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+
+
 export default function GoogleAuthButton() {
     const router = useRouter();
 
@@ -41,8 +43,8 @@ export default function GoogleAuthButton() {
             onClick={handleGoogleSignIn}
             className="w-full flex items-center justify-center gap-2 border border-gray-300 py-2 rounded hover:bg-gray-100 transition"
         >
-            <Image src="/google-icon.svg" alt="Google" width={20} height={20} />
-            <span className="text-sm text-gray-700">Continuer avec Google</span>
+            <span className="text-sm text-gray-700">Continuer avec</span>
+            <Image src="/icons/google-icon.png" alt="Google" width={50} height={50} />
         </button>
     );
 }

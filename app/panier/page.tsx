@@ -1,8 +1,9 @@
-// app/panier/page.tsx
 "use client";
 
-import { useCartStore } from "@/stores/cartStore";
+import Link from "next/link";
 import Image from "next/image";
+import axios from "axios";
+import { useCartStore } from "@/stores/cartStore";
 
 export default function PanierPage() {
     const items = useCartStore((s) => s.items);
@@ -13,6 +14,16 @@ export default function PanierPage() {
         (sum, item) => sum + item.price * item.quantity,
         0
     );
+
+    const handleCheckout = async () => {
+        try {
+            const res = await axios.post("/api/checkout", { items });
+            window.location.href = res.data.url;
+        } catch (err) {
+            alert("Erreur lors de la redirection vers le paiement.");
+            console.error(err);
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-16">
@@ -73,7 +84,10 @@ export default function PanierPage() {
 
                     <div className="mt-10 border-t pt-6 flex justify-between items-center">
                         <p className="text-lg font-bold">Total : {total.toFixed(2)} €</p>
-                        <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-xl">
+                        <button
+                            onClick={handleCheckout}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-xl"
+                        >
                             Passer au paiement
                         </button>
                     </div>

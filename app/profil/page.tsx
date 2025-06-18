@@ -1,71 +1,64 @@
 "use client";
 
-import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { updatePassword } from "firebase/auth";
-import { useState, useEffect } from "react";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, updatePassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import AccordionSection from "@/components/ui/AccordionSection";
 
-export default function ProfilPage() {
-    const { user, loading } = useAuthRedirect();
-    const [newPassword, setNewPassword] = useState("");
+export default function ProfilePage() {
+    const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
+    const [newPassword, setNewPassword] = useState("");
     const [orders, setOrders] = useState<any[]>([]);
+    const router = useRouter();
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            if (!user) return;
-            const docRef = doc(db, "users", user.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setUserData(docSnap.data());
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (!firebaseUser) {
+                router.push("/login");
+            } else {
+                setUser(firebaseUser);
+                const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+                if (userDoc.exists()) setUserData(userDoc.data());
             }
-        };
-
-        const fetchOrders = async () => {
-            if (!user) return;
-            const q = query(collection(db, "orders"), where("uid", "==", user.uid));
-            const querySnapshot = await getDocs(q);
-            const results: any[] = [];
-            querySnapshot.forEach((doc) => results.push({ id: doc.id, ...doc.data() }));
-            setOrders(results);
-        };
-
-        fetchUserData();
-        fetchOrders();
-    }, [user]);
+        });
+        return () => unsubscribe();
+    }, [router]);
 
     const handlePasswordChange = async () => {
+        if (!newPassword) return;
         try {
-            await updatePassword(user, newPassword);
-            alert("Mot de passe mis à jour !");
+            await updatePassword(auth.currentUser!, newPassword);
+            alert("Mot de passe mis à jour avec succès !");
             setNewPassword("");
         } catch (err: any) {
-            alert(err.message);
+            alert("Erreur : " + err.message);
         }
     };
 
-    if (loading) return <p className="p-8">Chargement...</p>;
-    if (!user) return null;
+    const formattedDate = userData?.createdAt
+        ? new Date(userData.createdAt).toLocaleDateString()
+        : "";
 
     return (
-        <div className="max-w-3xl mx-auto mt-16 p-6 border rounded shadow space-y-10">
-            <h1 className="text-2xl font-bold">Mon profil</h1>
+        <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow">
+            <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
 
-            <div className="space-y-2">
-                <p><strong>Email :</strong> {user.email}</p>
-                <p><strong>UID :</strong> {user.uid}</p>
-                {userData?.createdAt && <p><strong>Créé le :</strong> {new Date(userData.createdAt).toLocaleDateString()}</p>}
-            </div>
+            <AccordionSection title="Mes informations personnelles">
+                <p><strong>Email :</strong> {user?.email}</p>
+                <p><strong>UID :</strong> {user?.uid}</p>
+                <p><strong>Créé le :</strong> {formattedDate}</p>
+            </AccordionSection>
 
-            <div className="space-y-2">
-                <h2 className="text-lg font-semibold">Changer de mot de passe</h2>
+            <AccordionSection title="Changer de mot de passe">
                 <input
                     type="password"
+                    className="w-full border px-3 py-2 rounded mb-3"
+                    placeholder="Nouveau mot de passe"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Nouveau mot de passe"
-                    className="border px-4 py-2 rounded w-full"
                 />
                 <button
                     onClick={handlePasswordChange}
@@ -73,25 +66,20 @@ export default function ProfilPage() {
                 >
                     Mettre à jour le mot de passe
                 </button>
-            </div>
+            </AccordionSection>
 
-            <div>
-                <h2 className="text-lg font-semibold mb-2">Mes commandes</h2>
+            <AccordionSection title="Mes commandes">
                 {orders.length === 0 ? (
-                    <p className="text-gray-500">Aucune commande trouvée.</p>
+                    <p>Aucune commande trouvée.</p>
                 ) : (
-                    <ul className="space-y-3">
-                        {orders.map((order) => (
-                            <li key={order.id} className="border rounded p-4">
-                                <p><strong>Commande :</strong> {order.id}</p>
-                                <p><strong>Date :</strong> {new Date(order.date).toLocaleDateString()}</p>
-                                <p><strong>Total :</strong> {order.total.toFixed(2)} €</p>
-                                <p><strong>Statut :</strong> {order.status}</p>
-                            </li>
-                        ))}
-                    </ul>
+                    orders.map((order) => (
+                        <div key={order.id} className="mb-2 border p-2 rounded">
+                            <p>Commande #{order.id}</p>
+                            <p>Date : {order.date}</p>
+                        </div>
+                    ))
                 )}
-            </div>
+            </AccordionSection>
         </div>
     );
 }

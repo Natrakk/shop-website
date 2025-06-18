@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { auth } from "@/lib/firebase";
+import Link from "next/link";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
@@ -67,6 +68,9 @@ export default function LoginPage() {
                 >
                     Créer un compte
                 </span>
+            </p>
+            <p className="text-sm text-center mt-4 text-blue-600 underline cursor-pointer">
+                <Link href="/forgot-password">Mot de passe oublié ?</Link>
             </p>
         </div>
     );
