@@ -29,7 +29,7 @@ export const mockProducts: Product[] = [
   },
   {
     id: "3",
-    slug: "tshirt-modele-3",
+    slug: "t-shirt-modele-3",
     title: "T-shirt modèle 3",
     description: "Modèle premium édition limitée.",
     price: 44.9,
