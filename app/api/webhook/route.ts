@@ -1,55 +1,53 @@
 // app/api/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { buffer } from "micro";
 import Stripe from "stripe";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
+// Stripe config
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2025-05-28.basil",
+    apiVersion: "2025-05-28.basil", // à jour
 });
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: NextRequest) {
-    const rawBody = await req.arrayBuffer();
-    const sig = req.headers.get("stripe-signature")!;
+    const rawBody = await req.text(); // lecture en texte brut
+    const sig = req.headers.get("stripe-signature");
+
+    if (!sig) return new Response("Missing Stripe signature", { status: 400 });
 
     let event: Stripe.Event;
 
     try {
         event = stripe.webhooks.constructEvent(
-            Buffer.from(rawBody),
+            rawBody,
             sig,
             endpointSecret
         );
     } catch (err: any) {
-        console.error("❌ Erreur de vérification du webhook :", err.message);
-        return new NextResponse(`Webhook error: ${err.message}`, { status: 400 });
+        console.error("❌ Erreur de validation Webhook Stripe :", err.message);
+        return new Response(`Webhook Error: ${err.message}`, { status: 400 });
     }
 
-    // 🎯 Cible uniquement l'événement de paiement réussi
+    // 🎯 Paiement réussi
     if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        const orderRef = doc(db, "orders", session.id);
+        const orderId = session.id;
+        const email = session.customer_email;
+        const amount = session.amount_total;
 
-        await setDoc(orderRef, {
-            id: session.id,
-            amount_total: session.amount_total,
-            currency: session.currency,
-            uid: session.metadata?.uid || "inconnu",
-            createdAt: serverTimestamp(),
+        await setDoc(doc(db, "orders", orderId), {
+            id: orderId,
+            email,
+            amount,
+            status: "paid",
+            createdAt: new Date().toISOString(),
         });
 
-        console.log("✅ Commande enregistrée :", session.id);
+        console.log("✅ Commande enregistrée dans Firestore :", orderId);
     }
 
-    return new NextResponse("ok", { status: 200 });
+    return NextResponse.json({ received: true });
 }
